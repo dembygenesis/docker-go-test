@@ -1,25 +1,21 @@
-FROM golang:1.16-alpine
+# Image
+FROM golang:alpine as builder
+
+# Set workdir
 WORKDIR /app
 
-# add some necessary packages
-RUN apk update && \
-    apk add libc-dev && \
-    apk add gcc && \
-    apk add make
-
-# prevent the re-installation of vendors at every change in the source code
-COPY ./go.mod go.sum ./
-RUN go mod download && go mod verify
-
-# Install Compile Daemon for go. We'll use it to watch changes in go files
-RUN go get github.com/githubnemo/CompileDaemon
-
-# Copy and build the app
+# Copy over files
 COPY . .
-COPY ./entrypoint.sh /entrypoint.sh
 
-# wait-for-it requires bash, which alpine doesn't ship with by default. Use wait-for instead
-ADD https://raw.githubusercontent.com/eficode/wait-for/v2.1.0/wait-for /usr/local/bin/wait-for
-RUN chmod +rx /usr/local/bin/wait-for /entrypoint.sh
+# Install dependencies
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o main ./cmd/api/main.go
 
-ENTRYPOINT [ "sh", "/entrypoint.sh" ]
+# Minimize using busybox
+FROM busybox
+
+WORKDIR /app
+
+COPY --from=builder /app/main /usr/bin/
+COPY --from=builder /app/.env /app
+
+ENTRYPOINT ["main"]
