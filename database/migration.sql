@@ -1,3 +1,5 @@
+CREATE DATABASE abc;
+CREATE DATABASE abc1;
 CREATE TABLE `users`
 (
     id   bigint auto_increment,
