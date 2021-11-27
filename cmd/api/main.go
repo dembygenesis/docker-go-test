@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/joho/godotenv"
 	"log"
 	"net/http"
+	"os"
 )
 
 type User struct {
@@ -15,8 +17,32 @@ type User struct {
 }
 
 func getUsers() []*User {
+	// Load .env
 	// Open up our database connection.
-	db, err := sql.Open("mysql", "tester:secret@tcp(db:3306)/test")
+	// db, err := sql.Open("mysql", "tester:secret@tcp(db:3306)/test")
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("Can't load ENV")
+	}
+
+	envDBPort := os.Getenv("DB_PORT")
+	envDBHost := os.Getenv("DB_HOST")
+	envDBUser := os.Getenv("DB_USERNAME")
+	envDBPass := os.Getenv("DB_PASSWORD")
+	envDBSchema := os.Getenv("DB_SCHEMA")
+
+	var str string
+	str = fmt.Sprintf("%v:%v@tcp(%v:%v)/%v",
+		envDBUser,
+		envDBPass,
+		envDBHost,
+		envDBPort,
+		envDBSchema,
+	)
+	// str = "tester:secret@tcp(db:3306)/test"
+	fmt.Println("str", str)
+
+	db, err := sql.Open("mysql", str)
 
 	// if there is an error opening the connection, handle it
 	if err != nil {
